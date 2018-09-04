@@ -1,0 +1,7 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP JCA0224D01
+D dc/dc converter 24v/+-5V
+$ENDCMP
+#
+#End Doc Library

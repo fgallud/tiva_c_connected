@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name tiva_dac_ad5764)(type KiCad)(uri "$(KIPRJMOD)/tiva_dac_ad5764.pretty")(options "")(descr ""))
+)

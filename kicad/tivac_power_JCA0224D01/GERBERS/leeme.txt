@@ -1,0 +1,71 @@
+1)Diseño del circuito en kicad
+  incluir un agujero en cada esquina del PCB, eso ayuda en el corte del PCB
+  Crear el perimetro del PCB con lineas en la capa Edge.Cuts con grosor mayor que la resolucion de openscad pero menor que la precision del laser (por ejemplo 0.001mm)
+  Crear en la capa Eco1.User con grosor menor que la precision del laser (por ejemplo 0.0001mm) un circulo dentro del agujero de dos taladros muy separados y dos cuadraditos en las esquinas inferior-izquierda y superior-derecha bordeando el dibujo, eso hace que al laserear ese dibujo salga con el 0,0 en el mismo sitio que el resto.
+2)exportar los agujeros, FRONT y BACK como gerber y Edge.Cuts y Eco1.User como DXF.
+  En FRONT y BACK se debe incluir la capa Edge Cuts para que los margenes sean claros al crear las rutas por donde pasa el laser
+  se debe exportar con la esquina inferior izquierda como cero local
+3)En FlatCAM importar los gerbers de FRONT y BACK y el Echelon de agujeros
+4) En los holes crear el gcode para perforar el PCB (uno para cada broca que se quiera usar)
+la velocidad de movimiento es unica, para evitar esto hay que modificar el gcode.
+cada linea que mueve el eje x/y a una velocidad y si mueve el z en otra
+
+en python:
+
+import re
+
+velocidad_xy=200 #[mm/minuto]
+velocidad_z=10  #[mm/minuto]
+fichero_nombres=['agujeros_broca0.3.gcode',
+                 'agujeros_broca0.5.gcode',
+                 'agujeros_broca0.8.gcode',
+                 'agujeros_broca1.1.gcode']
+
+def procesa_fichero(fichero_nombre):
+    fichero=open(fichero_nombre,'r')
+    texto_todo=fichero.read()
+    fichero.close()
+    texto_lineas=texto_todo.split('\n')
+    texto_salida=''
+    for linea in texto_lineas:
+        if re.search('G0[0,1] X',linea):
+            texto_salida+=linea+'F%i\n' %velocidad_xy
+        elif re.search('G0[0,1] Z',linea):
+            texto_salida+=linea+'F%i\n' %velocidad_z
+        else:
+            texto_salida+=linea+'\n'
+    fichero=open(fichero_nombre+'procesado','w')
+    fichero.write(texto_salida)
+    fichero.close()
+
+for fichero_nombre in fichero_nombres:
+    procesa_fichero(fichero_nombre)
+
+
+
+
+
+
+
+5) EN bCNC cargar el gcode y perforar un PCB virgen. Recortar con la guillotina uniendo los agujeros de las esquinas
+6) pintar el PCB en ambas caras
+7) En FlatCAM, en las capas FRONT y BACK crear las rutas de aislamiento con pasadas cada 0.15mm (inferior al ancho del laser)
+   y sin solape. Tantas pasadas como para llenar todo el area del PCB
+   IMPORTANTE, la capa BACK no hace falta darle la vuelta, eso se hace en openscad al final
+8) Generar el gcode para esas rutas
+9) En gcoderipper pasar las rutas a DXF. Asegurarse de que en la configuracion las unidades son milimetros!!
+10) En librecad eliminar la capa 2 que son las rutas que en una cnc hubiesen sido desplazamientos sin tocar el PCB
+11)renombrar los archivos. El perimetro debe llamarse edge.dxf las rutas para laserear la capa front  front.dxf y la capa back back.dxf
+12) openscad -o salida_para_laser.dxf genera_pcb.scad 
+    esto genera un dxf que ya tiene todo lo necesario para eliminar las partes a atacar.
+    ojo, la capa BACK se invierte en este paso.
+    el archivo tiene 3 figuras: un cuadro vacío que sirve para generar una plantilla donde colocar el PCB, una para FRONT y una para BACK invertida
+13)laserear la plantilla que se hizo en ECO1.USER en una lamina semirigida. Eso crea dos agujeros para alinear con dos del PCB. pasar un alambre o broca tanto por el aguero del PCB como por esta plantilla. Eso asegura que el PCB está perfectamente alineado con el laser. 
+14) laserear el DXF de la cara front creado en 12.
+15) espejar en corel la plantilla, de alineado y repetir 14 y 15 con la cara BACK.
+16) limpiar con alcohol
+17) ataque quimico
+18) pintar otra vez con laca de silicona y repetir 13-16 pero con la capa solder (solo agujeros donde hay que aplicar fundente
+15)soldar los componentes y vias
+  
+  
